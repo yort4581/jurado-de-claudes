@@ -56,7 +56,7 @@ Necesitas Python 3.11 o superior y una clave de la API de Claude
 ([platform.claude.com](https://platform.claude.com/)).
 
 ```bash
-git clone https://github.com/<tu-usuario>/jurado-de-claudes.git
+git clone https://github.com/yort4581/jurado-de-claudes.git
 cd jurado-de-claudes
 python -m venv .venv && source .venv/bin/activate   # en Windows: .venv\Scripts\activate
 pip install -r requirements.txt
@@ -119,10 +119,21 @@ prueba con algo de azar, útiles para tocar la interfaz o hacer una demo.
 | `JURADO_MODELO_JURADO` | `claude-haiku-5-5` | Modelo de los 12 jurados (barato y rápido, porque son muchos). |
 | `JURADO_MAX_PARALELO` | `6` | Máximo de llamadas simultáneas a la API. |
 | `JURADO_MOCK` | `0` | `1` para el modo simulado. |
+| `JURADO_CLAVE_ACCESO` | — | Si la defines, la web la pide antes de abrir un juicio. |
 
 Un juicio completo son 15 llamadas. Con los modelos por defecto cuesta del
 orden de un par de céntimos; si quieres un jurado más afilado, sube
 `JURADO_MODELO_JURADO` a `claude-sonnet-5-5`.
+
+## Publicar en internet (Render)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/yort4581/jurado-de-claudes)
+
+El repositorio incluye [`render.yaml`](render.yaml). Al pulsar el botón,
+Render pide dos valores: tu `ANTHROPIC_API_KEY` y una `JURADO_CLAVE_ACCESO`
+inventada por ti. Ponla siempre: sin ella, cualquiera con el enlace podría
+gastar tu saldo de la API. Comparte la clave solo con quien quieras que use
+el tribunal.
 
 ## Estructura
 

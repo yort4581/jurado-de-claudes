@@ -1,0 +1,17 @@
+# Despliegue en Render: https://render.com/deploy
+# Render pedirá ANTHROPIC_API_KEY y JURADO_CLAVE_ACCESO al crear el servicio.
+services:
+  - type: web
+    name: jurado-de-claudes
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn jurado.server:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/salud
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: JURADO_CLAVE_ACCESO
+        sync: false

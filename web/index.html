@@ -315,9 +315,11 @@
   const $ = (id) => document.getElementById(id);
   const ideaEl = $("idea"), abrir = $("abrir"), aviso = $("aviso"), juicio = $("juicio");
   const asientos = $("asientos"), estado = $("estado-jurado"), detalle = $("detalle");
-  let papeletas = {}, aborto = null;
+  let papeletas = {}, aborto = null, requiereClave = false, clave = "";
+  try { clave = localStorage.getItem("jurado-clave") || ""; } catch {}
 
   fetch("/api/salud").then(r => r.json()).then(s => {
+    requiereClave = !!s.requiere_clave;
     if (s.modo === "simulado") $("modo").textContent = "Modo simulado: respuestas de prueba, sin gastar tokens.";
     else if (!s.api_key_configurada) $("modo").textContent = "Falta ANTHROPIC_API_KEY en el archivo .env.";
     else $("modo").textContent = `Jurado con ${s.modelo_jurado}; fiscal, defensa y juez con ${s.modelo_principal}.`;
@@ -481,6 +483,10 @@
     const idea = ideaEl.value.trim();
     aviso.classList.add("oculto");
     if (idea.length < 10) { aviso.textContent = "El tribunal necesita algo más que un título: describe la idea en una o dos frases."; aviso.classList.remove("oculto"); ideaEl.focus(); return; }
+    if (requiereClave && !clave) {
+      clave = (prompt("Este tribunal es privado. Escribe la clave de acceso:") || "").trim();
+      if (!clave) return;
+    }
     reiniciar();
     abrir.disabled = true; abrir.textContent = "Juicio en curso…";
     juicio.classList.add("activo");
@@ -489,9 +495,15 @@
     aborto = new AbortController();
     try {
       const r = await fetch("/api/juicio", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json", "X-Clave-Acceso": clave },
         body: JSON.stringify({ idea }), signal: aborto.signal,
       });
+      if (r.status === 401) {
+        clave = "";
+        try { localStorage.removeItem("jurado-clave"); } catch {}
+      } else if (r.ok && clave) {
+        try { localStorage.setItem("jurado-clave", clave); } catch {}
+      }
       if (!r.ok) {
         let msg = `El servidor respondió ${r.status}.`;
         try { msg = (await r.json()).detail || msg; } catch {}

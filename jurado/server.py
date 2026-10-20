@@ -11,12 +11,13 @@ Rutas:
 
 from __future__ import annotations
 
+import hmac
 import json
 import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -28,6 +29,9 @@ load_dotenv()
 RAIZ = Path(__file__).resolve().parent.parent
 WEB = RAIZ / "web"
 MAX_CARACTERES = int(os.getenv("JURADO_MAX_CARACTERES", "4000"))
+# Si está definida, hay que enviarla en la cabecera X-Clave-Acceso para abrir
+# un juicio. Útil al publicar la app: evita que cualquiera gaste tu API key.
+CLAVE_ACCESO = os.getenv("JURADO_CLAVE_ACCESO", "")
 
 app = FastAPI(title="Jurado de Claudes", version="0.1.0")
 
@@ -49,11 +53,16 @@ async def salud() -> dict:
         "modelo_principal": llm.MODELO_PRINCIPAL,
         "modelo_jurado": llm.MODELO_JURADO,
         "api_key_configurada": bool(os.getenv("ANTHROPIC_API_KEY")),
+        "requiere_clave": bool(CLAVE_ACCESO),
     }
 
 
 @app.post("/api/juicio")
-async def juicio(caso: Caso) -> StreamingResponse:
+async def juicio(
+    caso: Caso, x_clave_acceso: str = Header(default="")
+) -> StreamingResponse:
+    if CLAVE_ACCESO and not hmac.compare_digest(x_clave_acceso, CLAVE_ACCESO):
+        raise HTTPException(status_code=401, detail="Clave de acceso incorrecta.")
     if not llm.modo_mock() and not os.getenv("ANTHROPIC_API_KEY"):
         raise HTTPException(
             status_code=503,
